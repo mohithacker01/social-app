@@ -4,33 +4,40 @@ const jwt = require("jsonwebtoken");
 
 
 async function registerController(req, res) {
-    const { username, password } = req.body || {};
-
-    if (!username || !password) {
-        return res.status(400).json({ message: "Username and password are required" });
-    }
-
     try {
+        console.log("registerController: Start");
+        const { username, password } = req.body || {};
+        console.log("registerController: Payload", { username, password: "***" });
+
+        if (!username || !password) {
+            return res.status(400).json({ message: "Username and password are required" });
+        }
+
         const isUserAlreadyExist = await userModel.findOne({ username });
+        console.log("registerController: User exists?", !!isUserAlreadyExist);
 
         if (isUserAlreadyExist) {
             return res.status(400).json({ message: "User already exists" });
         }
 
+        console.log("registerController: Hashing password...");
         const hashedPassword = await bcrypt.hash(password, 10);
 
+        console.log("registerController: Creating user...");
         const user = await userModel.create({
             username,
             password: hashedPassword
         });
+        console.log("registerController: User created", user._id);
 
         const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || "secretKey");
+        console.log("registerController: Token generated");
 
         res.cookie("token", token);
         res.status(201).json({ message: "User created successfully", user: { _id: user._id, username: user.username } });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Server error" });
+        console.error("registerController: Error", error);
+        res.status(500).json({ message: "Server error", error: error.message });
     }
 }
 

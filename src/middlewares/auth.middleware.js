@@ -11,8 +11,8 @@ async function authMiddleware(req, res, next) {
         const decodedToken = jwt.verify(token, process.env.JWT_SECRET)
 
         const user = await userModel.findById(decodedToken.id)
-        next()
         req.user = user
+        next()
     } catch (err) {
         console.error(err)
         return res.status(401).json({ message: "Invalid token" })

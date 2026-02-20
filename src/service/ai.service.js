@@ -1,44 +1,34 @@
-const { GoogleGenAI } = require("@google/genai");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-// The client gets the API key from the environment variable `GEMINI_API_KEY`.
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const model = genAI.getGenerativeModel({
+    model: "gemini-2.0-flash",
+    systemInstruction: `You are an expert in generating bhojpuri captions for images without using abusive word.
+    You generate single caption for the imageConfig.
+    Your caption should be short and engaging.
+    You use hashtags and emojis in the caption`
+});
 
-async function main() {
-    const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: "Explain how AI works in a few words",
-    });
-    console.log(response.text);
-}
-
-main();
-
-async function generateCaption(base64ImageFile) {
-    const contents = [
-        {
+async function generateCaption(base64ImageFile, mimeType = "image/jpeg") {
+    console.log("generateCaption: Start");
+    try {
+        const prompt = "Generate a caption for this image in Bhojpuri language.";
+        const imagePart = {
             inlineData: {
-                mimeType: "image/jpeg",
                 data: base64ImageFile,
-            },
-        },
-        { text: "Caption this image." },
-    ];
+                mimeType: mimeType
+            }
+        };
 
-    const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: contents,
-        config: {
-            systemInstruction: "You are an expert in generating captions for images.
-            You generate single caption for the imageConfig.
-            Your caption should be short and ConnectionStates.
-            You use hashtags and emojis in the caption"
-        }
-    });
-
-    return response.text
-
-    console.log(response.text);
-    res.json({ caption })
+        const result = await model.generateContent([prompt, imagePart]);
+        const response = await result.response;
+        const text = response.text();
+        console.log("generateCaption: Success", text);
+        return text;
+    } catch (error) {
+        console.error("generateCaption: Error", error);
+        throw error;
+    }
 }
 
 module.exports = {
